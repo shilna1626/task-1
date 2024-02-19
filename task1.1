@@ -1,0 +1,80 @@
+
+<?php
+$prices = [
+    "Product A" => 20,
+    "Product B" => 40,
+    "Product C" => 50
+];
+$discountRules = [
+    "flat_10_discount" => 10,
+    "bulk_5_discount" => 0.05,
+    "bulk_10_discount" => 0.10,
+    "tiered_50_discount" => 0.50
+];
+
+
+$giftWrapFee = 1;
+$shippingFeePerPackage = 5;
+$itemsPerPackage = 10;
+$quantities = [];
+$giftWrapStatus = [];
+
+foreach ($prices as $product => $price) {
+    echo "Enter the quantity for $product: ";
+    $quantities[$product] = (int) readline();
+    echo "Is $product wrapped as a gift? (yes/no): ";
+    $giftWrapStatus[$product] = (strtolower(readline()) === 'yes');
+}
+
+
+$subTotal = 0;
+foreach ($quantities as $product => $quantity) {
+    $subTotal += $quantity * $prices[$product];
+}
+
+
+$discountApplied = "";
+$discountAmount = 0;
+
+if ($subTotal > 200) {
+    $discountApplied = "flat_10_discount";
+    $discountAmount = 10;
+} elseif (max($quantities) > 10) {
+    $discountApplied = "bulk_5_discount";
+    $discountAmount = min(array_map(function ($quantity) use ($prices, $discountRules) {
+        return ($quantity > 10) ? $prices[array_search($quantity, $quantity)] * $discountRules["bulk_5_discount"] : 0;
+    }, $quantities));
+} elseif (array_sum($quantities) > 20) {
+    $discountApplied = "bulk_10_discount";
+    $discountAmount = $subTotal * $discountRules["bulk_10_discount"];
+} elseif (array_sum($quantities) > 30 && max($quantities) > 15) {
+    $discountApplied = "tiered_50_discount";
+    $discountAmount = array_sum(array_map(function ($quantity) use ($prices, $discountRules) {
+        return ($quantity > 15) ? $prices[array_search($quantity, $quantity)] * $discountRules["tiered_50_discount"] : 0;
+    }, $quantities));
+}
+
+
+$shippingFee = ceil(array_sum($quantities) / $itemsPerPackage) * $shippingFeePerPackage;
+
+
+$giftWrapFeeTotal = array_sum(array_map(function ($quantity, $isWrapped) use ($giftWrapFee) {
+    return $isWrapped ? $quantity * $giftWrapFee : 0;
+}, $quantities, $giftWrapStatus));
+
+
+$total = $subTotal - $discountAmount+$shippingFee + $giftWrapFeeTotal;
+
+
+echo "\nProduct Details:\n";
+foreach ($quantities as $product => $quantity) {
+    $totalAmount = $quantity *$prices[$product];
+    echo "$product - Quantity:$quantity, Total Amount: $totalAmount\n";
+}
+echo "\nSubtotal: $subTotal\n";
+echo "Discount Applied: $discountApplied, Discount Amount: $discountAmount\n";
+echo "Shipping Fee:$shippingFee\n";
+echo "Gift Wrap Fee:$giftWrapFeeTotal\n";
+echo "Total: $total\n";
+
+?>
